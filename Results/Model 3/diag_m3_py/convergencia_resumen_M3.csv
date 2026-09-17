@@ -1,0 +1,6 @@
+metrica,grupo,min,mediana,max,n
+ESS,ESS mu_t,4866.3,5919.9,6000.0,17
+ESS,ESS lambda2,920.0,943.6,2017.3,3
+ESS,ESS theta (multi-t),4055.3,6000.0,6000.0,415
+ESS,ESS s_kt,101.1,649.0,6000.0,528
+Rhat,R-hat (todos),1.0,1.0,1.0,435

@@ -1,0 +1,30 @@
+{
+  "modelo": "M3",
+  "fecha": "2026-08-09 17:13:47",
+  "N": 499983,
+  "n_save_usadas": 6000,
+  "n_save_disponibles": 6000,
+  "D_barra": 5196902.276834381,
+  "p_V": 6201.280661218431,
+  "DIC_V": 5203103.5574956,
+  "variantes": {
+    "media_parametros": {
+      "D_sombrero": 5194919.7339893,
+      "p_DIC": 1982.5428450806066,
+      "DIC": 5198884.819679461
+    },
+    "media_sigma2": {
+      "D_sombrero": 5194904.616152527,
+      "p_DIC": 1997.6606818540022,
+      "DIC": 5198899.937516235
+    },
+    "media_precision": {
+      "D_sombrero": 5194889.476910914,
+      "p_DIC": 2012.7999234665185,
+      "DIC": 5198915.076757847
+    }
+  },
+  "definicion": "DIC = D_sombrero + 2 p_DIC; p_DIC = D_barra - D_sombrero (Spiegelhalter et al., 2002)",
+  "verosimilitud": "y_i ~ N(x_i' theta_{t(i)}, s_{k,t} / v_{j,k})",
+  "segundos": 232.3820242881775
+}
