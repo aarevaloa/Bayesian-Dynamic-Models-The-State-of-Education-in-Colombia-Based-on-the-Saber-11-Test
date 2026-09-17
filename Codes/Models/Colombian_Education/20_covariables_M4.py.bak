@@ -1,0 +1,539 @@
+# -*- coding: utf-8 -*-
+# _____________________________________________________________________________
+# @  MODELO 4 - (20) COVARIABLES: EFECTOS Y CONTEXTO
+# _____________________________________________________________________________
+# SUSTITUYE Y ABSORBE AL MODULO 15, que queda eliminado del pipeline.
+#
+# El 15 mantenia su propia copia de resumen(), senda(), forest(), sendas(),
+# cargar_geojson() y eje_mapa(). Cuando estilo_M4 paso a promediar solo los
+# periodos pares, esa copia se quedo promediando los 16 y los dos modulos
+# empezaron a reportar numeros distintos para el mismo coeficiente (calen_B:
+# +19.9 en figR5, +6.2 en fig07-13). Fusionarlos elimina la duplicacion de raiz:
+# hay un unico lugar donde se define el promedio y un unico lugar donde se
+# dibuja un forest.
+#
+# Lo que NO se conserva del 15: los mapas de dispersion departamental
+# (mapa_dispersion_*.png y el gif). Ese resultado ya sale numericamente en la
+# tabla que imprime el modulo 17, y su version cartografica cabe en el 19, que
+# es el modulo territorial y ya tiene la geografia cargada.
+#
+# ------------------------------- FIGURAS -------------------------------------
+# BLOQUE A - efectos de las covariables individuales (venia del 15)
+#   figR1_trabajo.png        horas de trabajo semanal
+#   figR2_padres.png         escalera de educacion de la madre
+#   figR3_violencia.png      violencia municipal, en desviaciones estandar
+#   figR4_panorama.png       los 16 mayores efectos, por bloque jerarquico
+#   figR5_hogar_colegio.png  recursos del hogar y atributos del colegio
+#   figR6_calendario.png     calendario escolar: solo senda, no promedio
+# BLOQUE B - alimentacion, dedicacion y contexto territorial
+#   fig07_alimentacion.png   frecuencia de carne, cereal y leche
+#   fig08_lectura_internet.png horas de lectura frente a horas de internet
+#   fig09_contexto_muni.png  bloque M en UNIDADES REALES
+#   fig10_contexto_depto.png bloque D en UNIDADES REALES
+#   fig11_cambio_temporal.png Delta theta entre periodos del mismo semestre
+#   fig12_ranking.png        distribucion posterior del rango + contribucion
+#   fig13_faltantes.png      indicadores de faltante, diagnostico
+#
+# ------------------------------ DOS REGLAS -----------------------------------
+# (1) PROMEDIO SOBRE PERIODOS PARES. Los impares son el primer semestre
+#     (calendario B y rezagados): el 10.5% de las observaciones. Promediar los
+#     16 con peso igual les da el 50% del promedio, cambia el signo de tres
+#     coeficientes y el estatus de credibilidad de seis. P.resumen() y P.draws()
+#     usan solo los pares por defecto; las SENDAS si dibujan los 16, con los
+#     impares sombreados, porque ahi el punto es ver la trayectoria.
+# (2) CAMBIO ENTRE PERIODOS DEL MISMO SEMESTRE. Medido de t=1 a t=16, trabajar
+#     mas de 30 h parece empeorar 10.4 puntos; medido par contra par, 3.1. La
+#     diferencia es artefacto semestral.
+#
+# UNIDADES REALES: beta_original = beta_estandarizado / sd_x, con sd_x tomada de
+# estandar_params.csv, multiplicado por una unidad legible.
+# _____________________________________________________________________________
+
+import os, sys, time, warnings
+import numpy as np
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import estilo_M4 as E
+
+warnings.filterwarnings("ignore", message="All-NaN slice encountered")
+
+t0 = time.time()
+def paso(m):
+    print(f"[{time.time()-t0:6.1f}s] {m}", flush=True)
+
+paso("cargando cache y posterior")
+D = E.cargar_cache()
+P = E.cargar_posterior()
+et = list(D["et_periodo"])
+pares = np.where(D["es_par"])[0]
+Tt = P.Tt
+est_var, est_sd = D["est_var"], D["est_sd"]
+CONTINUAS = set(map(str, est_var))          # las estandarizadas en la Etapa 1
+
+def exigir(noms, donde):
+    """Comprueba de una vez que los nombres existen. Sin esto, un rotulo mal
+    escrito o una categoria de referencia distinta mata el script a mitad de
+    camino, con media docena de figuras ya escritas en disco."""
+    falta = [n for n in noms if n not in P.ix]
+    if falta:
+        raise KeyError(f"{donde}: no estan en theta_labels -> {falta}")
+
+def sd_de(nom):
+    """sd original de una covariable continua. Falla si no esta: devolver 1.0 en
+    silencio convertiria un error de tipeo, o una variable eliminada por el
+    filtro QR de la Etapa 1, en un efecto mal escalado sin ningun aviso."""
+    i = np.where(est_var == nom)[0]
+    if not len(i):
+        raise KeyError(f"'{nom}' no esta en estandar_params.csv. Variables "
+                       f"disponibles: {sorted(map(str, est_var))}")
+    return float(est_sd[i[0]])
+
+# ---- utilidades comunes -----------------------------------------------------
+XLAB = ("efecto sobre el puntaje global (puntos)\n"
+        "promedio de los ocho periodos pares, IC 95%")
+
+def par_paneles(alto=4.6, ancho=13.4, razon=(1, 1.05)):
+    fig, axs = plt.subplots(1, 2, figsize=(ancho, alto), width_ratios=razon)
+    return fig, axs
+
+def cerrar(fig, titulo, nombre, rect=(0, 0, 1, 0.90)):
+    if titulo:
+        fig.suptitle(titulo)
+    fig.tight_layout(rect=rect)
+    E.guardar(fig, nombre, cerrar=True)
+
+def eje_periodos(ax, cada=1):
+    """Sombrea los impares y rotula con los periodos reales."""
+    E.marcar_semestres(ax, Tt)
+    ax.set_xticks(range(1, Tt + 1, cada))
+    ax.set_xticklabels(et[::cada], rotation=90 if cada == 1 else 45,
+                       fontsize=6.5 if cada == 1 else 7)
+    ax.set_xlabel("periodo (sombreado: primer semestre, otra población)")
+
+def escalera(ax_f, ax_s, noms, ets, cols, tit_f, tit_s, anot="pos"):
+    """Forest del efecto promedio + sendas. El patron de todo el modulo."""
+    rs = E.forest(ax_f, noms, ets, cols, tit_f, anot_p=anot)
+    ax_f.set_xlabel(XLAB)
+    E.sendas(ax_s, noms, ets, cols, tit_s)
+    eje_periodos(ax_s, cada=2)
+    return rs
+
+# Comprobacion previa: todos los nombres que pide el modulo, de una sola vez.
+_TODOS = {
+ "trabajo": ["trabaja_MENOS.DE.10.HORAS","trabaja_ENTRE.11.Y.20.HORAS",
+             "trabaja_ENTRE.21.Y.30.HORAS","trabaja_MÁS.DE.30.HORAS"],
+ "educacion de la madre": [f"edu_madre_{s}" for s in
+   ["PRIMARIA.INCOMPLETA","PRIMARIA.COMPLETA",
+    "SECUNDARIA..BACHILLERATO..INCOMPLETA","SECUNDARIA..BACHILLERATO..COMPLETA",
+    "TÉCNICA.O.TECNOLÓGICA.INCOMPLETA","TÉCNICA.O.TECNOLÓGICA.COMPLETA",
+    "EDUCACIÓN.PROFESIONAL.INCOMPLETA","EDUCACIÓN.PROFESIONAL.COMPLETA",
+    "POSTGRADO"]],
+ "violencia": ["TASA_HOMICIDIOS","PROP_HOMICIDIOS_URBANO","TASA_VICTIMAS"],
+ "hogar": ["estu_inse_individual","libros_casa_11.A.25.LIBROS",
+           "libros_casa_26.A.100.LIBROS","libros_casa_MÁS.DE.100.LIBROS",
+           "compu_casa_SI","internet_SI"],
+ "colegio": ["cole_natu_NO_OFICIAL","cole_bilingue_S",
+             "cole_area_ubicacion_RURAL","genero_F","calen_B","calen_OTRO"],
+ "alimentacion": [f"{b}_{n}" for b in ("come_carne","come_cereal","come_leche")
+   for n in ("1.O.2.VECES.POR.SEMANA","3.A.5.VECES.POR.SEMANA",
+             "TODOS.O.CASI.TODOS.LOS.DÍAS")],
+ "lectura": [f"lectu_{s}" for s in ("30.MINUTOS.O.MENOS",
+   "ENTRE.30.Y.60.MINUTOS","ENTRE.1.Y.2.HORAS","MÁS.DE.2.HORAS")],
+ "internet": [f"inter_{s}" for s in ("30.MINUTOS.O.MENOS",
+   "ENTRE.30.Y.60.MINUTOS","ENTRE.1.Y.3.HORAS","MÁS.DE.3.HORAS")],
+}
+for _g, _ns in _TODOS.items():
+    exigir(_ns, _g)
+paso(f"   {sum(len(v) for v in _TODOS.values())} nombres verificados contra "
+     f"theta_labels")
+
+# #############################################################################
+# BLOQUE A - EFECTOS DE LAS COVARIABLES INDIVIDUALES
+# #############################################################################
+
+# ============================ FIG R1: TRABAJO ================================
+paso("figR1 trabajo")
+TR = ["trabaja_MENOS.DE.10.HORAS", "trabaja_ENTRE.11.Y.20.HORAS",
+      "trabaja_ENTRE.21.Y.30.HORAS", "trabaja_MÁS.DE.30.HORAS"]
+TR_ET = ["Menos de 10 h/sem", "11–20 h/sem", "21–30 h/sem", "Más de 30 h/sem"]
+fig, axs = plt.subplots(1, 2, figsize=(12.8, 5.4), width_ratios=(1.35, 1))
+E.sendas(axs[0], TR, TR_ET, E.C_TRABAJO, "Sendas dinámicas del efecto (banda 90%)")
+eje_periodos(axs[0], cada=2)
+RS_TR = E.forest(axs[1], TR, TR_ET, E.C_TRABAJO, "Efecto promedio (IC 95%)")
+axs[1].set_xlabel(XLAB)
+cerrar(fig, "¿Trabajar mientras se estudia afecta el puntaje?  "
+            "Efectos frente a la categoría de referencia (no trabaja)",
+       "figR1_trabajo.png", rect=(0, 0, 1, 0.92))
+
+# ==================== FIG R2: EDUCACION DE LA MADRE ==========================
+paso("figR2 educacion de la madre")
+ESC = ["edu_madre_PRIMARIA.INCOMPLETA", "edu_madre_PRIMARIA.COMPLETA",
+       "edu_madre_SECUNDARIA..BACHILLERATO..INCOMPLETA",
+       "edu_madre_SECUNDARIA..BACHILLERATO..COMPLETA",
+       "edu_madre_TÉCNICA.O.TECNOLÓGICA.INCOMPLETA",
+       "edu_madre_TÉCNICA.O.TECNOLÓGICA.COMPLETA",
+       "edu_madre_EDUCACIÓN.PROFESIONAL.INCOMPLETA",
+       "edu_madre_EDUCACIÓN.PROFESIONAL.COMPLETA", "edu_madre_POSTGRADO"]
+ESC_ET = ["Primaria incompleta", "Primaria completa", "Secundaria incompleta",
+          "Secundaria completa", "Técnica incompleta", "Técnica completa",
+          "Profesional incompleta", "Profesional completa", "Postgrado"]
+AZ = E.azules(len(ESC))
+fig, axs = plt.subplots(1, 2, figsize=(13.6, 6.0), width_ratios=(1.15, 1))
+RS_ESC = E.forest(axs[0], ESC, ESC_ET, AZ,
+                  "Escalera del efecto de la educación de la madre", anot_p="pos")
+axs[0].set_xlabel(XLAB)
+SEL = ["edu_madre_PRIMARIA.COMPLETA",
+       "edu_madre_SECUNDARIA..BACHILLERATO..COMPLETA",
+       "edu_madre_EDUCACIÓN.PROFESIONAL.COMPLETA", "edu_madre_POSTGRADO"]
+E.sendas(axs[1], SEL, ["Primaria completa", "Secundaria completa",
+                       "Profesional completa", "Postgrado"],
+         [AZ[1], AZ[3], AZ[7], AZ[8]],
+         "Sendas dinámicas de niveles seleccionados (banda 90%)")
+eje_periodos(axs[1], cada=2)
+cerrar(fig, "¿La educación de los padres afecta el puntaje?  Educación de la "
+            "madre frente a la categoría de referencia",
+       "figR2_padres.png", rect=(0, 0, 1, 0.92))
+
+# ======================= FIG R3: VIOLENCIA MUNICIPAL =========================
+paso("figR3 violencia")
+VIO = ["TASA_HOMICIDIOS", "PROP_HOMICIDIOS_URBANO", "TASA_VICTIMAS"]
+VIO_ET = ["Tasa de homicidios", "Prop. homicidios urbanos", "Tasa de víctimas"]
+fig, axs = plt.subplots(1, 2, figsize=(12.8, 5.4), width_ratios=(1.35, 1))
+E.sendas(axs[0], VIO, VIO_ET, E.C_VIOLENCIA, "Sendas dinámicas del efecto (banda 90%)")
+eje_periodos(axs[0], cada=2)
+RS_VIO = E.forest(axs[1], VIO, VIO_ET, E.C_VIOLENCIA, "Efecto promedio (IC 95%)")
+axs[1].set_xlabel("efecto por +1 desviación estándar de la covariable (puntos)\n"
+                  "promedio de los ocho periodos pares, IC 95%")
+cerrar(fig, "¿La violencia del municipio afecta el puntaje?  Covariables "
+            "municipales en unidades estandarizadas\n"
+            "(la versión en unidades reales está en fig09_contexto_muni)",
+       "figR3_violencia.png", rect=(0, 0, 1, 0.89))
+
+# ==================== FIG R4: PANORAMA DE LOS MAYORES EFECTOS ================
+paso("figR4 panorama")
+cands = [l for l in P.labels if l != "intercepto" and not l.endswith("MISSING")]
+rs_all = sorted((P.resumen(n) for n in cands),
+                key=lambda r: -abs(r["mediana"]))[:16]
+NOMS = [r["nombre"] for r in rs_all]
+fig, ax = plt.subplots(figsize=(11.8, 7.8))
+E.forest(ax, NOMS,
+         [n.replace("edu_madre_", "madre: ").replace("_", " ") for n in NOMS],
+         [E.C[E.bloque(n)] for n in NOMS],
+         "Los 16 mayores efectos del Modelo 4 (se excluyen indicadores de faltante)",
+         anot_p="pos")
+ax.set_xlabel(XLAB)
+for b, nom_b in (("E", "Estudiante"), ("M", "Municipal"), ("D", "Departamental")):
+    ax.plot([], [], "s", color=E.C[b], ms=8, label=nom_b)
+ax.legend(frameon=False, fontsize=8.5, loc="lower right")
+cerrar(fig, None, "figR4_panorama.png", rect=(0, 0, 1, 1))
+
+# ======================= FIG R5: HOGAR Y COLEGIO =============================
+paso("figR5 hogar y colegio")
+HOG = ["estu_inse_individual", "libros_casa_11.A.25.LIBROS",
+       "libros_casa_26.A.100.LIBROS", "libros_casa_MÁS.DE.100.LIBROS",
+       "compu_casa_SI", "internet_SI"]
+HOG_ET = ["Índice INSE (individual)", "Libros en casa: 11–25", "Libros: 26–100",
+          "Libros: más de 100", "Computador en casa", "Internet en casa"]
+COL = ["cole_natu_NO_OFICIAL", "cole_bilingue_S", "cole_area_ubicacion_RURAL",
+       "genero_F"]
+COL_ET = ["Colegio no oficial", "Colegio bilingüe", "Sede rural",
+          "Estudiante mujer"]
+fig, axs = plt.subplots(1, 2, figsize=(13.6, 5.8))
+RS_HOG = E.forest(axs[0], HOG, HOG_ET, [E.C["E"]] * len(HOG),
+                  "Recursos del hogar", anot_p="pos")
+RS_COL = E.forest(axs[1], COL, COL_ET, [E.C_COLEGIO] * len(COL),
+                  "Atributos del colegio y del estudiante", anot_p="pos")
+for a in axs:
+    a.set_xlabel(XLAB)
+cerrar(fig, "Covariables individuales: hogar, colegio y estudiante "
+            "(frente a la categoría de referencia)",
+       "figR5_hogar_colegio.png", rect=(0, 0, 1, 0.92))
+
+# ========================= FIG R6: CALENDARIO ================================
+# calen_B esta casi confundido con el semestre: su mediana por periodo va de
+# +25.7 a +42.9 en los impares y de -8.3 a +24.2 en los pares. No son dos
+# estimaciones del mismo parametro sino dos regimenes, asi que ningun promedio
+# (ni de 16 periodos ni de 8) admite lectura sustantiva. Solo senda.
+paso("figR6 calendario")
+fig, ax = plt.subplots(figsize=(9.8, 5.2))
+E.sendas(ax, ["calen_B", "calen_OTRO"], ["Calendario B", "Calendario otro"],
+         ["#b2182b", E.C_COLEGIO], "")
+eje_periodos(ax)
+ax.set_title("Calendario escolar: el coeficiente NO es promediable\n"
+             "el calendario B es mayoritario en el primer semestre y marginal "
+             "en el segundo,\nde modo que cada paridad lo estima sobre otra "
+             "población", fontsize=10)
+cerrar(fig, None, "figR6_calendario.png", rect=(0, 0, 1, 1))
+
+# #############################################################################
+# BLOQUE B - ALIMENTACION, DEDICACION Y CONTEXTO TERRITORIAL
+# #############################################################################
+
+# ============================ FIG 07: ALIMENTACION ===========================
+paso("fig07 alimentacion")
+COMIDA = {
+    "come_carne":  ("Carne, pescado o huevo", "#a8322d"),
+    "come_cereal": ("Cereales, arroz o pasta", "#c98b28"),
+    "come_leche":  ("Leche o derivados", "#3f7d8c"),
+}
+NIVELES = [("1.O.2.VECES.POR.SEMANA", "1 o 2 veces/semana"),
+           ("3.A.5.VECES.POR.SEMANA", "3 a 5 veces/semana"),
+           ("TODOS.O.CASI.TODOS.LOS.DÍAS", "todos o casi todos los días")]
+
+fig, axs = plt.subplots(1, 2, figsize=(13.6, 5.6), width_ratios=(1, 1.05))
+rs, ets, cols = [], [], []
+for base, (nom_leg, c) in COMIDA.items():
+    for suf, et_niv in NIVELES:
+        rs.append(P.resumen(f"{base}_{suf}"))
+        ets.append(f"{nom_leg.split(',')[0]}: {et_niv}")
+        cols.append(c)
+E.forest_dict(axs[0], rs, ets, cols,
+              "Efecto frente a nunca o rara vez (IC 95%)", anot_p="pos",
+              xlab=XLAB)
+diarios = [f"{b}_TODOS.O.CASI.TODOS.LOS.DÍAS" for b in COMIDA]
+E.sendas(axs[1], diarios, [v[0] for v in COMIDA.values()],
+         [v[1] for v in COMIDA.values()],
+         "Sendas del consumo diario (banda 90%)")
+eje_periodos(axs[1], cada=2)
+cerrar(fig, "¿La alimentación se asocia con el puntaje?  "
+            "Frecuencia semanal de tres grupos de alimentos",
+       "fig07_alimentacion.png")
+
+# ======================= FIG 08: LECTURA E INTERNET ==========================
+paso("fig08 lectura e internet")
+LECT = [("lectu_30.MINUTOS.O.MENOS", "30 min o menos"),
+        ("lectu_ENTRE.30.Y.60.MINUTOS", "entre 30 y 60 min"),
+        ("lectu_ENTRE.1.Y.2.HORAS", "entre 1 y 2 horas"),
+        ("lectu_MÁS.DE.2.HORAS", "más de 2 horas")]
+INTE = [("inter_30.MINUTOS.O.MENOS", "30 min o menos"),
+        ("inter_ENTRE.30.Y.60.MINUTOS", "entre 30 y 60 min"),
+        ("inter_ENTRE.1.Y.3.HORAS", "entre 1 y 3 horas"),
+        ("inter_MÁS.DE.3.HORAS", "más de 3 horas")]
+
+fig, axs = plt.subplots(2, 2, figsize=(13.6, 9.4), width_ratios=(1, 1.05))
+for fila, (grupo, tit, rampa) in enumerate(
+        [(LECT, "Horas dedicadas a la LECTURA por gusto", E.azules(4)),
+         (INTE, "Horas dedicadas a INTERNET y redes sociales",
+          plt.get_cmap("Oranges")(np.linspace(.4, .9, 4)))]):
+    noms = [g[0] for g in grupo]; ets_g = [g[1] for g in grupo]
+    escalera(axs[fila, 0], axs[fila, 1], noms, ets_g, rampa,
+             f"{tit}\nefecto frente a no dedicar tiempo (IC 95%)",
+             "Sendas dinámicas (banda 90%)", anot="pos")
+cerrar(fig, "Leer y navegar no son lo mismo: dos escaleras de dedicación diaria",
+       "fig08_lectura_internet.png")
+
+# ==================== FIG 09/10: CONTEXTO EN UNIDADES REALES =================
+# (variable, multiplicador sobre la unidad original, etiqueta de la unidad)
+MUNI = [("TASA_HOMICIDIOS", 10, "+10 homicidios por 100 mil hab."),
+        ("TASA_VICTIMAS", 10000, "+10 pp de la población como víctimas"),
+        ("PROP_HOMICIDIOS_URBANO", 0.10, "+10 pp de homicidios urbanos"),
+        ("PROP_NBI", 10, "+10 pp de necesidades básicas insatisfechas"),
+        ("COMP_INASISTENCIA_ESCOLAR", 1, "+1 punto de inasistencia escolar"),
+        ("PROP_URBANA", 0.10, "+10 pp de población urbana"),
+        ("SGP_EDUC_PC", 100000, "+100 mil pesos de SGP educativo per cápita"),
+        ("TASA_MATRICULA_ES", 10, "+10 puntos de matrícula en educación superior"),
+        ("IES_CON_OFERTA", 10, "+10 instituciones con oferta"),
+        ("LOG_POBLACION", np.log(2), "duplicar la población")]
+DEPTO = [("IPM", 10, "+10 puntos del índice de pobreza multidimensional"),
+         ("TASA_DESEMPLEO", 1, "+1 pp de desempleo"),
+         ("TASA_SUBOCUPACION", 1, "+1 pp de subocupación"),
+         ("CREC_PIB_REAL", 1, "+1 pp de crecimiento del PIB"),
+         # PIB_CONSTANTE viene en MILES DE MILLONES (media 76 382 = 76.4 billones,
+         # que es como el DANE publica el PIB departamental): 10 000 unidades son
+         # diez billones de pesos, no diez mil millones.
+         ("PIB_CONSTANTE", 10000, "+10 billones de PIB departamental")]
+
+def contexto(tabla, color, titulo, nombre):
+    rs_c, ets_c, cols_c = [], [], []
+    for nom, mult, et_u in tabla:
+        f = mult / sd_de(nom)                       # de sd a unidad legible
+        d = P.draws(nom) * f                        # promedio sobre pares
+        rs_c.append(dict(mediana=float(np.median(d)),
+                         lo=float(np.quantile(d, .025)),
+                         hi=float(np.quantile(d, .975)),
+                         p_neg=float(np.mean(d < 0)), p_pos=float(np.mean(d > 0))))
+        ets_c.append(et_u); cols_c.append(color)
+    fig, axs = par_paneles(alto=max(4.8, 0.52 * len(tabla) + 2.4))
+    E.forest_dict(axs[0], rs_c, ets_c, cols_c,
+                  "Efecto por unidad interpretable (IC 95%)", anot_p="neg",
+                  xlab="cambio en el puntaje global (puntos)\n"
+                       "promedio de los ocho periodos pares, IC 95%")
+    noms = [t[0] for t in tabla]
+    ramp = plt.get_cmap("cividis")(np.linspace(.15, .85, len(noms)))
+    E.sendas(axs[1], noms, [t[0].replace("_", " ").title() for t in tabla], ramp,
+             "Sendas en desviaciones estándar (banda 90%)")
+    eje_periodos(axs[1], cada=2)
+    axs[1].legend(frameon=False, fontsize=6.5, ncol=2)
+    cerrar(fig, titulo, nombre)
+    return rs_c
+
+paso("fig09 contexto municipal")
+rs_m = contexto(MUNI, E.C["M"],
+                "¿Cuánto pesa el contexto municipal?  Efectos en unidades reales",
+                "fig09_contexto_muni.png")
+paso("fig10 contexto departamental")
+rs_d = contexto(DEPTO, E.C["D"],
+                "¿Cuánto pesa el contexto departamental?  Efectos en unidades reales",
+                "fig10_contexto_depto.png")
+
+# ======================= FIG 11: CAMBIO TEMPORAL =============================
+paso("fig11 cambio temporal")
+mag = np.array([abs(P.resumen(l)["mediana"]) for l in cands])
+sel = [cands[i] for i in np.argsort(-mag)[:18]]
+cam = [P.cambio(l) for l in sel]                      # 2017-2 contra 2024-2
+orden = np.argsort([c["mediana"] for c in cam])
+sel = [sel[i] for i in orden]; cam = [cam[i] for i in orden]
+cols = [E.C[E.bloque(l)] for l in sel]
+ets_c = [l.replace("_", " ").replace(".", " ").lower() for l in sel]
+
+fig, ax = plt.subplots(figsize=(11.8, 7.4))
+E.forest_dict(ax, cam, ets_c, cols,
+              f"Cambio del efecto entre {et[cam[0]['t0']-1]} y {et[cam[0]['t1']-1]}",
+              anot_p="pos", xlab="cambio del coeficiente (puntos), IC 95%")
+for b, nom_b in (("E", "Estudiante"), ("M", "Municipal"), ("D", "Departamental")):
+    ax.plot([], [], "s", color=E.C[b], ms=8, label=nom_b)
+ax.legend(frameon=False, fontsize=8, loc="lower right")
+cerrar(fig, "¿Qué efectos se ampliaron y cuáles se cerraron?\n"
+            "comparación entre periodos del mismo semestre, no entre t = 1 y t = 16",
+       "fig11_cambio_temporal.png")
+
+# ==================== FIG 12: RANKING POSTERIOR Y CONTRIBUCION ===============
+paso("fig12 ranking posterior y contribucion")
+# Ordenar por |promedio| hunde a los coeficientes cuyo efecto es grande en algun
+# periodo pero se cancela al promediar: CREC_PIB_REAL tiene 0.90 de promedio y
+# 10.34 de maximo, y come_leche_MISSING 5.25 contra 19.04. El criterio de
+# "importancia" es por tanto el maximo temporal.
+mag_max = np.array([np.abs(np.median(P.draws_t(l), axis=1)).max() for l in cands])
+top = [cands[i] for i in np.argsort(-mag_max)[:14]]
+B = np.abs(np.vstack([P.draws(l) for l in top]))       # (n_top, S)
+rangos = (-B).argsort(axis=0).argsort(axis=0) + 1      # 1 = efecto mayor
+H = np.vstack([[np.mean(rangos[i] == r) for r in range(1, len(top) + 1)]
+               for i in range(len(top))])
+ord_r = np.argsort([np.mean(rangos[i]) for i in range(len(top))])
+
+# Contribucion empirica: sd de la covariable x magnitud del efecto. La rama se
+# elige con estandar_params.csv, no con una heuristica sobre el signo: lo que
+# figura ahi son las continuas estandarizadas (sd = 1 por construccion) y el
+# resto son indicadoras 0/1, cuya sd es sqrt(p(1-p)) con p la prevalencia.
+wD = np.where(np.isfinite(D["Xbar_D"][0]), D["n_D"], 0).astype(float)
+wD = wD / wD.sum()
+contrib = []
+for l in top:
+    if str(l) in CONTINUAS:
+        sdx = 1.0
+    else:
+        x = D["Xbar_D"][P.ix[l]]
+        pr = float(np.nansum(np.where(np.isfinite(x), x * wD, 0)))
+        pr = min(max(pr, 0.0), 1.0)
+        sdx = np.sqrt(pr * (1 - pr))
+    contrib.append(sdx * abs(P.resumen(l)["mediana"]))
+contrib = np.array(contrib)
+
+fig, axs = plt.subplots(1, 2, figsize=(14.4, 6.6), width_ratios=(1.25, 1))
+im = axs[0].imshow(H[ord_r], cmap="magma_r", aspect="auto", vmin=0, vmax=1)
+axs[0].set_yticks(range(len(top)))
+axs[0].set_yticklabels([top[i].replace("_", " ").replace(".", " ").lower()
+                        for i in ord_r], fontsize=7.5)
+axs[0].set_xticks(range(len(top)))
+axs[0].set_xticklabels(range(1, len(top) + 1), fontsize=8)
+axs[0].set_xlabel("posición en el ranking por magnitud")
+axs[0].grid(False)
+fig.colorbar(im, ax=axs[0], fraction=0.03, pad=0.02, label="probabilidad posterior")
+axs[0].set_title("¿Es robusto el orden de importancia?\nprobabilidad de ocupar "
+                 "cada posición (selección por máximo temporal)")
+
+o2 = np.argsort(contrib)
+axs[1].barh(range(len(top)), contrib[o2],
+            color=[E.C[E.bloque(top[i])] for i in o2], height=0.68)
+axs[1].set_yticks(range(len(top)))
+axs[1].set_yticklabels([top[i].replace("_", " ").replace(".", " ").lower()
+                        for i in o2], fontsize=7.5)
+axs[1].set_xlabel("sd de la covariable × |efecto| (puntos)")
+axs[1].set_title("Contribución empírica\nun efecto grande sobre algo raro explica poco")
+cerrar(fig, "Priorización de factores: magnitud, incertidumbre y prevalencia",
+       "fig12_ranking.png")
+
+# ========================= FIG 13: INDICADORES DE FALTANTE ===================
+paso("fig13 faltantes")
+falt = [l for l in P.labels if l.endswith("MISSING")]
+rs_f = [P.resumen(l) for l in falt]
+o3 = np.argsort([r["mediana"] for r in rs_f])
+falt = [falt[i] for i in o3]; rs_f = [rs_f[i] for i in o3]
+fig, ax = plt.subplots(figsize=(11.8, 0.42 * len(falt) + 2.8))
+E.forest_dict(ax, rs_f, [l.replace("_MISSING", "").replace("_", " ").lower()
+                         for l in falt],
+              [E.C[E.bloque(l)] for l in falt],
+              "Efecto asociado a tener el dato ausente (IC 95%)", anot_p="pos",
+              xlab=XLAB)
+cerrar(fig, "Diagnóstico: los indicadores de faltante no son neutrales\n"
+            "varios alcanzan magnitudes comparables a las covariables sustantivas",
+       "fig13_faltantes.png")
+
+# ============================== INFORME ======================================
+def linea(r, etq, nom=None):
+    extra = ""
+    if nom is not None:
+        extra = f"   [16 per.: {P.resumen(nom, pares=False)['mediana']:+7.2f}]"
+    print(f"    {etq:<30} {r['mediana']:+7.2f}  "
+          f"IC95 [{r['lo']:+7.2f}, {r['hi']:+7.2f}]   "
+          f"P(<0)={r['p_neg']:.3f}  P(>0)={r['p_pos']:.3f}{extra}")
+
+print("\n" + "=" * 96)
+print("EFECTOS DE LAS COVARIABLES  (puntos del puntaje global, promedio de los "
+      "OCHO PERIODOS PARES)")
+print("Entre corchetes, el promedio de los 16 periodos, que mezcla semestres y "
+      "NO debe citarse.")
+print("=" * 96)
+
+for tit, noms_g, ets_g, rs_g in (
+        ("Trabajo (vs. no trabaja)", TR, TR_ET, RS_TR),
+        ("Educación de la madre (vs. referencia)", ESC, ESC_ET, RS_ESC),
+        ("Violencia municipal (por +1 sd)", VIO, VIO_ET, RS_VIO),
+        ("Hogar", HOG, HOG_ET, RS_HOG),
+        ("Colegio y estudiante", COL, COL_ET, RS_COL)):
+    print(f"\n  {tit}")
+    for n, e, r in zip(noms_g, ets_g, rs_g):
+        linea(r, e, n)
+
+print("\n  Calendario: NO promediable, se reporta el rango de la senda")
+for n, e in (("calen_B", "Calendario B"), ("calen_OTRO", "Calendario otro")):
+    s = np.median(P.draws_t(n), axis=1)
+    print(f"    {e:<30} impares [{s[0::2].min():+6.1f}, {s[0::2].max():+6.1f}]"
+          f"    pares [{s[1::2].min():+6.1f}, {s[1::2].max():+6.1f}]")
+
+print("\n  Alimentación (frente a nunca o rara vez)")
+for base, (nom_leg, _) in COMIDA.items():
+    n = f"{base}_TODOS.O.CASI.TODOS.LOS.DÍAS"
+    linea(P.resumen(n), nom_leg.split(",")[0] + " diario", n)
+
+print("\n  Lectura frente a internet (nivel máximo de dedicación)")
+for n, tt in (("lectu_MÁS.DE.2.HORAS", "leer más de 2 h"),
+              ("inter_MÁS.DE.3.HORAS", "navegar más de 3 h")):
+    linea(P.resumen(n), tt, n)
+
+print("\n  Contexto MUNICIPAL en unidades reales")
+for (nom, _, et_u), r in zip(MUNI, rs_m):
+    print(f"    {et_u:<52} {r['mediana']:+6.2f}  "
+          f"[{r['lo']:+6.2f}, {r['hi']:+6.2f}]  P(<0) = {r['p_neg']:.3f}")
+print("\n  Contexto DEPARTAMENTAL en unidades reales")
+for (nom, _, et_u), r in zip(DEPTO, rs_d):
+    print(f"    {et_u:<52} {r['mediana']:+6.2f}  "
+          f"[{r['lo']:+6.2f}, {r['hi']:+6.2f}]  P(<0) = {r['p_neg']:.3f}")
+
+print(f"\n  Cambio temporal entre {et[cam[0]['t0']-1]} y {et[cam[0]['t1']-1]}")
+for c, l in zip(cam, sel):
+    if c["p_pos"] > 0.95 or c["p_neg"] > 0.95:
+        print(f"    {l:<46} {c['mediana']:+6.2f}  "
+              f"[{c['lo']:+6.2f}, {c['hi']:+6.2f}]  "
+              f"P = {max(c['p_pos'], c['p_neg']):.3f}")
+print("    (solo se listan los cambios con probabilidad posterior mayor que 0.95)")
+
+print("\n  Faltantes con efecto mayor que 10 puntos en magnitud")
+for l, r in zip(falt, rs_f):
+    if abs(r["mediana"]) > 10:
+        print(f"    {l:<46} {r['mediana']:+6.2f}  "
+              f"[{r['lo']:+6.2f}, {r['hi']:+6.2f}]")
+paso("LISTO")
