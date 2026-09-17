@@ -85,21 +85,5 @@ The analysis is based on the ICFES Saber 11 records, publicly available through 
 
 ## Requirements
 
-* **R** _[versión]_ for the samplers and the preparation of the data.
-* **Python** _[versión]_ for the diagnostics, the comparison of the models and the figures, executed through Jupyter notebooks.
-
-## Citation
-
-```bibtex
-@mastersthesis{[clave],
-  author  = {[Apellido, Nombre]},
-  title   = {Bayesian Dynamic Models: The State of Education in Colombia Based on the Saber 11 Test},
-  school  = {Universidad Nacional de Colombia},
-  year    = {[año]},
-  type    = {Tesis de Maestr\'ia en Ciencias --- Estad\'istica}
-}
-```
-
-## Contact
-
-_[correo de contacto]_
+* **R** for the samplers and the preparation of the data.
+* **Python** for the diagnostics, the comparison of the models and the figures, executed through Jupyter notebooks.
