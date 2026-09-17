@@ -1,8 +1,6 @@
 # Bayesian Dynamic Models: The State of Education in Colombia Based on the Saber 11 Test
 
-Code and selected results of the master's thesis *Bayesian Dynamic Models: The State of Education in Colombia Based on the Saber 11 Test*, Maestría en Ciencias — Estadística, Universidad Nacional de Colombia.
-
-**Author:** _[nombre completo]_ · **Advisor:** _[nombre del director]_
+**Authors:** Andrés Felipe Arévalo Arévalo - Juan Camilo Sosa Martínez·
 
 ---
 
@@ -13,6 +11,9 @@ The assessment of educational quality through standardized testing has become a 
 This study proposes a hierarchical and dynamic Bayesian framework with LASSO regularization for the analysis of data with a nested temporal and territorial structure. Methodologically, four models are formulated by crossing two factors: the specification of the mean, static or dynamic, and the observation distribution, Normal or Student-t, the latter aimed at capturing heavy tails and outliers. All four share a three-level hierarchical structure, with students nested within municipalities within departments, covariates measured at those same levels, and Bayesian LASSO regularization with a separate penalization parameter for each level of measurement. In the dynamic specifications, regression coefficients are treated as latent states that evolve over time according to state equations, allowing for an explicit modeling of the dynamics of covariate effects, while shrinkage is applied to the innovations rather than to the coefficients, so that the regularized hypothesis is not that effects are null but that they remain stable across periods. The proposed framework is implemented using Markov chain Monte Carlo (MCMC) algorithms that combine forward filtering backward sampling (FFBS) for the state trajectory, retrospective beta-gamma sampling for the evolution of the observational variances, and a Gibbs sampler for the hierarchical and regularization parameters.
 
 The four models are fitted to nearly five hundred thousand students distributed across 1,107 municipalities and 33 departments over sixteen periods, and are compared in terms of predictive performance through the expected log pointwise predictive density (elpd), complemented by the WAIC and DIC criteria. The results show that the dynamic factor dominates the robustness factor by a wide margin, and that the two factors interact, in the sense that under a static specification the Student-t likelihood does not improve predictive performance, whereas under a dynamic specification it improves it appreciably. The dynamic model with Student-t likelihood emerges as the formal predictive optimum.
+
+<img width="1420" height="1528" alt="fig06_nivel_muni" src="https://github.com/user-attachments/assets/975529bc-14e8-4c97-aa9a-fe683e1775df" />
+<img width="2254" height="1560" alt="fig01_encuadre" src="https://github.com/user-attachments/assets/1b89366d-ec26-4ba4-9e27-10ad4a4f02cf" />
 
 ---
 
