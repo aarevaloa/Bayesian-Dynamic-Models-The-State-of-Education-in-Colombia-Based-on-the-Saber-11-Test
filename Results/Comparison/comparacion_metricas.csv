@@ -1,0 +1,152 @@
+modelo,dimension,metrica,valor,fuente
+M1,convergencia,rhat_max,1.0321873302498996,resumen_convergencia_M1.csv
+M1,convergencia,ess_bulk_min,80.78410200133429,resumen_convergencia_M1.csv
+M1,convergencia,ess_tail_min,293.199442427398,resumen_convergencia_M1.csv
+M1,convergencia,prop_ess_lt_400,0.007656967840735069,resumen_convergencia_M1.csv
+M1,convergencia,geweke_frac_fdr,0.0,resumen_convergencia_M1.csv
+M1,convergencia,n_par_conv,1306.0,resumen_convergencia_M1.csv
+M1,ajuste,rmse,44.37345357768964,capa uniforme (6000 draws)
+M1,ajuste,mae,35.72715310202655,capa uniforme (6000 draws)
+M1,informacion,elpd_loo,-2603670.7264750735,capa uniforme (6000 draws)
+M1,informacion,se_elpd_loo,495.1218359412434,capa uniforme (6000 draws)
+M1,informacion,p_loo,1145.28169113677,capa uniforme (6000 draws)
+M1,informacion,elpd_waic,-2603664.137885154,capa uniforme (6000 draws)
+M1,informacion,se_elpd_waic,495.0576013152677,capa uniforme (6000 draws)
+M1,informacion,p_waic,1138.693101219643,capa uniforme (6000 draws)
+M1,informacion,prop_khat_gt_07,8.000272009248314e-06,capa uniforme (6000 draws)
+M1,informacion,dic,5207347.231605437,ajuste_M1.csv
+M1,informacion,p_dic,1200.015975104645,ajuste_M1.csv
+M1,informacion,N,499983.0,capa uniforme (6000 draws)
+M1,informacion,n_save,6000.0,ajuste_M1.csv
+M1,calibracion,cob_50,0.4823864011376387,capa uniforme (6000 draws)
+M1,calibracion,cob_80,0.7944090099063368,capa uniforme (6000 draws)
+M1,calibracion,cob_95,0.9557524955848499,capa uniforme (6000 draws)
+M1,calibracion,ks_pit,4.828402739700145e-99,capa uniforme (6000 draws)
+M1,calibracion,ks_pit_d,0.01506853915311035,capa uniforme (6000 draws)
+M1,calibracion,ppc_z_max,57.9991609186422,
+M1,calibracion,n_ppc_extremos,5.0,ppc_estadisticos_M1.csv
+M1,calibracion,p_bayes_media,0.0,ppc_estadisticos_M1.csv
+M1,calibracion,p_bayes_sd,0.3975,ppc_estadisticos_M1.csv
+M1,calibracion,p_bayes_asimetria,0.0,ppc_estadisticos_M1.csv
+M1,calibracion,p_bayes_curtosis,1.0,ppc_estadisticos_M1.csv
+M1,calibracion,p_bayes_q05,0.0,ppc_estadisticos_M1.csv
+M1,calibracion,p_bayes_q95,0.0,ppc_estadisticos_M1.csv
+M1,calibracion,z_ppc_media,4.956307758744234,ppc_estadisticos_M1.csv (sd aprox. por cuantiles)
+M1,calibracion,z_ppc_sd,0.26793165241227224,ppc_estadisticos_M1.csv (sd aprox. por cuantiles)
+M1,calibracion,z_ppc_asimetria,56.313291581523494,ppc_estadisticos_M1.csv (sd aprox. por cuantiles)
+M1,calibracion,z_ppc_curtosis,-57.9991609186422,ppc_estadisticos_M1.csv (sd aprox. por cuantiles)
+M1,calibracion,z_ppc_q05,33.71249596420209,ppc_estadisticos_M1.csv (sd aprox. por cuantiles)
+M1,calibracion,z_ppc_q95,24.724007500593583,ppc_estadisticos_M1.csv (sd aprox. por cuantiles)
+M2,convergencia,rhat_max,1.070417975673156,resumen_convergencia_M2.csv
+M2,convergencia,ess_bulk_min,5.65780699036632,resumen_convergencia_M2.csv
+M2,convergencia,ess_tail_min,29.059776729191857,resumen_convergencia_M2.csv
+M2,convergencia,prop_ess_lt_400,0.0022953328232593728,resumen_convergencia_M2.csv
+M2,convergencia,geweke_frac_fdr,0.0022953328232593728,resumen_convergencia_M2.csv
+M2,convergencia,n_par_conv,1307.0,resumen_convergencia_M2.csv
+M2,ajuste,rmse,44.37390022027172,capa uniforme (6000 draws)
+M2,ajuste,mae,35.72591555509404,capa uniforme (6000 draws)
+M2,informacion,elpd_loo,-2603756.6995818755,capa uniforme (6000 draws)
+M2,informacion,se_elpd_loo,496.4328365032741,capa uniforme (6000 draws)
+M2,informacion,p_loo,1151.1567522012629,capa uniforme (6000 draws)
+M2,informacion,elpd_waic,-2603751.822431513,capa uniforme (6000 draws)
+M2,informacion,se_elpd_waic,496.3897766507836,capa uniforme (6000 draws)
+M2,informacion,p_waic,1146.2796018397285,capa uniforme (6000 draws)
+M2,informacion,prop_khat_gt_07,8.000272009248314e-06,capa uniforme (6000 draws)
+M2,informacion,dic,5207536.359679475,metricas_M2.json
+M2,informacion,p_dic,1220.6332260631025,metricas_M2.json
+M2,informacion,N,499983.0,capa uniforme (6000 draws)
+M2,informacion,n_save,6000.0,metricas_M2.json
+M2,calibracion,cob_50,0.4807023438796919,capa uniforme (6000 draws)
+M2,calibracion,cob_80,0.7930629641407808,capa uniforme (6000 draws)
+M2,calibracion,cob_95,0.9555344881725979,capa uniforme (6000 draws)
+M2,calibracion,ks_pit,1.7350773341882417e-104,capa uniforme (6000 draws)
+M2,calibracion,ks_pit_d,0.01547889270660363,capa uniforme (6000 draws)
+M2,calibracion,ppc_z_max,57.399629490490874,
+M2,calibracion,n_ppc_extremos,5.0,ppc_estadisticos_M2.csv
+M2,calibracion,p_bayes_media,0.0,ppc_estadisticos_M2.csv
+M2,calibracion,p_bayes_sd,0.18,ppc_estadisticos_M2.csv
+M2,calibracion,p_bayes_asimetria,0.0,ppc_estadisticos_M2.csv
+M2,calibracion,p_bayes_curtosis,1.0,ppc_estadisticos_M2.csv
+M2,calibracion,p_bayes_q05,0.0,ppc_estadisticos_M2.csv
+M2,calibracion,p_bayes_q95,0.0,ppc_estadisticos_M2.csv
+M2,calibracion,z_ppc_media,5.184931764179193,ppc_estadisticos_M2.csv (sd aprox. por cuantiles)
+M2,calibracion,z_ppc_sd,0.9557460681929824,ppc_estadisticos_M2.csv (sd aprox. por cuantiles)
+M2,calibracion,z_ppc_asimetria,57.399629490490874,ppc_estadisticos_M2.csv (sd aprox. por cuantiles)
+M2,calibracion,z_ppc_curtosis,-53.7865356599787,ppc_estadisticos_M2.csv (sd aprox. por cuantiles)
+M2,calibracion,z_ppc_q05,34.1168601218257,ppc_estadisticos_M2.csv (sd aprox. por cuantiles)
+M2,calibracion,z_ppc_q95,23.572929137087876,ppc_estadisticos_M2.csv (sd aprox. por cuantiles)
+M3,convergencia,rhat_max,1.003,reporte_diagnostico_M3.md
+M3,convergencia,ess_bulk_min,101.1,convergencia_resumen.csv
+M3,convergencia,prop_ess_lt_400,0.0,"capa uniforme (6000 draws, relleno)"
+M3,convergencia,geweke_frac_fdr,0.0,reporte_diagnostico_M3.md
+M3,convergencia,n_par_conv,963.0,convergencia_resumen.csv
+M3,ajuste,rmse,43.89095349641725,capa uniforme (6000 draws)
+M3,ajuste,mae,35.316539938817286,capa uniforme (6000 draws)
+M3,informacion,elpd_loo,-2598296.9160053562,capa uniforme (6000 draws)
+M3,informacion,se_elpd_loo,494.66875953545815,capa uniforme (6000 draws)
+M3,informacion,p_loo,828.8829947919585,capa uniforme (6000 draws)
+M3,informacion,elpd_waic,-2598296.814896625,capa uniforme (6000 draws)
+M3,informacion,se_elpd_waic,494.6671728986178,capa uniforme (6000 draws)
+M3,informacion,p_waic,828.7818860607214,capa uniforme (6000 draws)
+M3,informacion,prop_khat_gt_07,0.0,capa uniforme (6000 draws)
+M3,informacion,dic,5198884.819679,ajuste_dic_M3.csv (variante media_parametros)
+M3,informacion,p_dic,1982.542845,ajuste_dic_M3.csv
+M3,informacion,N,499983.0,capa uniforme (6000 draws)
+M3,calibracion,cob_50,0.4845744755321681,capa uniforme (6000 draws)
+M3,calibracion,cob_80,0.7957670560799067,capa uniforme (6000 draws)
+M3,calibracion,cob_95,0.955516487560577,capa uniforme (6000 draws)
+M3,calibracion,ks_pit,1.1455665718444736e-86,capa uniforme (6000 draws)
+M3,calibracion,ks_pit_d,0.014091424620312154,capa uniforme (6000 draws)
+M3,calibracion,ppc_z_max,58.4166447323604,"capa uniforme (6000 draws, relleno)"
+M3,calibracion,n_ppc_extremos,6.0,reporte_diagnostico_M3.md
+M3,calibracion,p_bayes_media,0.0,reporte_diagnostico_M3.md
+M3,calibracion,p_bayes_sd,0.985,reporte_diagnostico_M3.md
+M3,calibracion,p_bayes_asimetria,0.0,reporte_diagnostico_M3.md
+M3,calibracion,p_bayes_curtosis,1.0,reporte_diagnostico_M3.md
+M3,calibracion,p_bayes_q05,0.0,reporte_diagnostico_M3.md
+M3,calibracion,p_bayes_q95,0.0,reporte_diagnostico_M3.md
+M3,calibracion,z_ppc_media,4.105175447519766,"capa uniforme (6000 draws, relleno)"
+M3,calibracion,z_ppc_sd,-0.6408295249177344,"capa uniforme (6000 draws, relleno)"
+M3,calibracion,z_ppc_asimetria,58.4166447323604,"capa uniforme (6000 draws, relleno)"
+M3,calibracion,z_ppc_curtosis,-49.12451300941205,"capa uniforme (6000 draws, relleno)"
+M3,calibracion,z_ppc_q05,34.379290909902515,"capa uniforme (6000 draws, relleno)"
+M3,calibracion,z_ppc_q95,23.469340227931628,"capa uniforme (6000 draws, relleno)"
+M4,convergencia,rhat_max,2.7740775641814595,tabla_convergencia_*.csv
+M4,convergencia,rhat_max_sin_nu,1.0648634444298457,tabla_convergencia_*.csv
+M4,convergencia,ess_bulk_min,3.3353211901671087,tabla_convergencia_*.csv
+M4,convergencia,ess_bulk_min_sin_nu,25.10969458934264,tabla_convergencia_*.csv
+M4,convergencia,prop_ess_lt_400,0.004878048780487805,tabla_convergencia_*.csv
+M4,convergencia,geweke_frac_fdr,0.002369668246445498,resumen_diagnostico_M4.txt
+M4,convergencia,n_par_conv,1435.0,tabla_convergencia_*.csv
+M4,ajuste,rmse,43.889080951661526,capa uniforme (6000 draws)
+M4,ajuste,mae,35.31062937861324,capa uniforme (6000 draws)
+M4,informacion,elpd_loo,-2597788.505806978,capa uniforme (6000 draws)
+M4,informacion,se_elpd_loo,491.5147592045903,capa uniforme (6000 draws)
+M4,informacion,p_loo,843.8780528949574,capa uniforme (6000 draws)
+M4,informacion,elpd_waic,-2597788.4559428627,capa uniforme (6000 draws)
+M4,informacion,se_elpd_waic,491.5143366855258,capa uniforme (6000 draws)
+M4,informacion,p_waic,843.8281887783895,capa uniforme (6000 draws)
+M4,informacion,prop_khat_gt_07,0.0,capa uniforme (6000 draws)
+M4,informacion,dic,5195587.908303331,tabla_ajuste_waic.csv
+M4,informacion,p_dic,859.6476638382301,tabla_ajuste_waic.csv
+M4,informacion,N,499983.0,capa uniforme (6000 draws)
+M4,informacion,n_save,6000.0,resumen_diagnostico_M4.txt
+M4,calibracion,cob_50,0.48360444255104673,capa uniforme (6000 draws)
+M4,calibracion,cob_80,0.795993063764168,capa uniforme (6000 draws)
+M4,calibracion,cob_95,0.9563465157815366,capa uniforme (6000 draws)
+M4,calibracion,ks_pit,3.532593858998425e-86,capa uniforme (6000 draws)
+M4,calibracion,ks_pit_d,0.014051412803070928,capa uniforme (6000 draws)
+M4,calibracion,ppc_z_max,66.09262737498373,
+M4,calibracion,n_ppc_extremos,5.0,tabla_ppc.csv
+M4,calibracion,p_bayes_media,0.0,tabla_ppc.csv
+M4,calibracion,p_bayes_sd,0.445,tabla_ppc.csv
+M4,calibracion,p_bayes_q05,0.0,tabla_ppc.csv
+M4,calibracion,p_bayes_q95,0.0,tabla_ppc.csv
+M4,calibracion,p_bayes_asimetria,0.0,tabla_ppc.csv
+M4,calibracion,p_bayes_curtosis,1.0,tabla_ppc.csv
+M4,calibracion,z_ppc_media,4.944965540257066,tabla_ppc.csv
+M4,calibracion,z_ppc_sd,0.05173993964101713,tabla_ppc.csv
+M4,calibracion,z_ppc_q05,30.296134151695565,tabla_ppc.csv
+M4,calibracion,z_ppc_q95,21.49844684591534,tabla_ppc.csv
+M4,calibracion,z_ppc_asimetria,66.09262737498373,tabla_ppc.csv
+M4,calibracion,z_ppc_curtosis,-51.94331931033935,tabla_ppc.csv
